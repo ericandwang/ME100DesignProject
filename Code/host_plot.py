@@ -17,8 +17,12 @@ print("Connected!")
 t = []
 s = []
 
+# initialize popup boolean
+canPop = 1
+
 # mqtt callbacks
 def data(c, u, message):
+    global canPop
     # extract data from MQTT message
     msg = message.payload.decode('ascii')
     # convert to vector of floats
@@ -27,24 +31,28 @@ def data(c, u, message):
     # append to data vectors, add more as needed
     t.append(f[0])
     s.append(f[1])
+    if (f[1] < 20 and canPop == 1):
+        topic = "{}/popup".format(session)
+        data = "do popup"
+        mqtt.publish(topic, data)
+        canPop = 0
 
-def plot(client, userdata, message):
-    # customize this to match your data
-    print("plotting ...")
-    plt.plot(t, s, 'rs')
-    plt.xlabel('Time')
-    plt.ylabel('Sinusoid')
-    print("show plot ...")
-    # show plot on screen
-    plt.show()
+
+def releasePopup(client, userdata, message):
+    global canPop
+    msg = message.payload.decode('ascii')
+    if (msg == "popup released"):
+        canPop = 1
+    print(msg)
 
 # subscribe to topics
 data_topic = "{}/data".format(session, qos)
-plot_topic = "{}/plot".format(session, qos)
 mqtt.subscribe(data_topic)
-mqtt.subscribe(plot_topic)
 mqtt.message_callback_add(data_topic, data)
-mqtt.message_callback_add(plot_topic, plot)
+
+popup_topic = "{}/popup".format(session, qos)
+mqtt.subscribe(popup_topic)
+mqtt.message_callback_add(popup_topic, releasePopup)
 
 # wait for MQTT messages
 # this function never returns
