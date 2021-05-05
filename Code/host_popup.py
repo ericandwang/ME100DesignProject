@@ -13,16 +13,17 @@ mqtt = paho.Client()
 mqtt.connect(BROKER, port=1883)
 print("Connected!")
 
-# mqtt callbacks
+# mqtt callback for popup activation
 def doPopup(c, u, message):
     msg = message.payload.decode('ascii')
     if (msg == "do popup"):
+        # activate popup
         ctypes.windll.user32.MessageBoxW(0, "Straighten Back Please", "Posture Alert", 0)
         topic = "{}/popup".format(session)
         data = "popup released"
         mqtt.publish(topic, data)
 
-# subscribe to topics
+# Subscribe to MQTT topics
 popup_topic = "{}/popup".format(session, qos)
 mqtt.subscribe(popup_topic)
 mqtt.message_callback_add(popup_topic, doPopup)
